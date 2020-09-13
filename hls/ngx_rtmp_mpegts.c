@@ -94,6 +94,8 @@ ngx_rtmp_mpegts_write_file(ngx_rtmp_mpegts_file_t *file, u_char *in,
             return NGX_ERROR;
         }
 
+        file->bytelen += in_size;
+
         return NGX_OK;
     }
 
@@ -140,6 +142,8 @@ ngx_rtmp_mpegts_write_file(ngx_rtmp_mpegts_file_t *file, u_char *in,
         if (rc < 0) {
             return NGX_ERROR;
         }
+
+        file->bytelen += out - buf + n;
 
         out = buf;
         out_size = sizeof(buf);
@@ -363,7 +367,14 @@ ngx_rtmp_mpegts_open_file(ngx_rtmp_mpegts_file_t *file, u_char *path,
         return NGX_ERROR;
     }
 
+    if (ngx_lock_fd(file->fd) != NGX_OK) {
+        ngx_log_error(NGX_LOG_ERR, log, ngx_errno,
+                      "hls: error locking fragment file");
+        return NGX_ERROR;
+    }
+
     file->size = 0;
+    file->bytelen = 0;
 
     if (ngx_rtmp_mpegts_write_header(file) != NGX_OK) {
         ngx_log_error(NGX_LOG_ERR, log, ngx_errno,
@@ -391,6 +402,8 @@ ngx_rtmp_mpegts_close_file(ngx_rtmp_mpegts_file_t *file)
         if (rc < 0) {
             return NGX_ERROR;
         }
+
+        file->bytelen += 16;
     }
 
     ngx_close_file(file->fd);
