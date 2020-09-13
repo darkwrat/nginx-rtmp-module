@@ -363,6 +363,12 @@ ngx_rtmp_mpegts_open_file(ngx_rtmp_mpegts_file_t *file, u_char *path,
         return NGX_ERROR;
     }
 
+    if (ngx_lock_fd(file->fd) != NGX_OK) {
+        ngx_log_error(NGX_LOG_ERR, log, ngx_errno,
+                      "hls: error locking fragment file");
+        return NGX_ERROR;
+    }
+
     file->size = 0;
 
     if (ngx_rtmp_mpegts_write_header(file) != NGX_OK) {
